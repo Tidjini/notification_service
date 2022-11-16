@@ -1,11 +1,11 @@
 const express = require("express");
 const app = express();
 const server = require("http").createServer(app);
-const io = require("socket.io").listen(server);
+const io = require("socket.io")(server);
 const bodyParser = require("body-parser");
 clients = [];
 connections = [];
-const PORT = process.env.PORT || 7000;
+const PORT = process.env.PORT || 7777;
 server.listen(PORT);
 console.log("SERVER STRATING...");
 
@@ -14,46 +14,44 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(bodyParser.raw());
 
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + "/index.htm");
-});
+function index(request, response) {
+  response.sendFile(__dirname + "/index.htm");
+}
 
-app.post("/notify", (req, res) => {
-  const notification = req.body;
+function onNotify(request, response) {
+  //treat post body request as notification
+  const notification = request.body;
+
   if (notification === undefined) return;
   else {
+    //notify with context attribute in message
     io.sockets.emit(notification.context, JSON.stringify(notification));
-    res.send(JSON.stringify(notification));
-    console.log("notificaiton", notification);
-  }
-});
+    //return the response to http client
+    response.send(JSON.stringify(notification));
 
-let interval;
-io.sockets.on("connection", function (socket) {
+    //print to log
+    console.log("notification sended with success, content:", notification);
+  }
+}
+
+function onConnect(socket) {
+  /**onConnect on connect to this end point
+   *
+   * socket with id of connected client
+   */
   connections.push(socket);
-  console.log("Connected %s user(s)...", connections.length);
+  console.log(
+    "Connected %s user(s)...",
+    connections.length,
+    "socket_id:",
+    socket.id
+  );
   socket.on("disconnect", function (socket) {
     connections.splice(connections.indexOf(socket), 1);
     console.log(" DECONNECTION Connected %s user(s)...", connections.length);
   });
-  //interval = setInterval(() => getApiAndEmit(socket), 10000);
-  //   socket.on("send message", function (data) {
-  //     io.sockets.emit("new message", data);
-  //   });
-});
+}
 
-const getApiAndEmit = (socket) => {
-  const clientNotif = {
-    date: new Date(),
-    entity: "CLIENT",
-    data: "client data",
-  };
-  const magasinNotif = {
-    date: new Date(),
-    entity: "MAGASIN",
-    data: "client data",
-  };
-  // Emitting a new message. Will be consumed by the client
-  socket.emit("Admin", JSON.stringify(clientNotif));
-  socket.emit("Admin", JSON.stringify(magasinNotif));
-};
+io.sockets.on("connection", onConnect);
+app.post("/notify", onNotify);
+app.get("/", index);
