@@ -25,7 +25,7 @@ function onNotify(request, response) {
   if (notification === undefined) return;
   else {
     //notify with context attribute in message
-    io.sockets.emit(notification.context, JSON.stringify(notification));
+    io.sockets.emit(notification.event, JSON.stringify(notification.message));
     //return the response to http client
     response.send(JSON.stringify(notification));
 
