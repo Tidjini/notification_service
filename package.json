@@ -2,7 +2,7 @@
   "name": "service_notification",
   "version": "1.0.0",
   "description": "service for notification messages",
-  "main": "index.js",
+  "main": "server.js",
   "engines": {
     "node": "18.x"
   },
